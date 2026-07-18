@@ -56,6 +56,7 @@ def test_claude_code_adapter_normalizes_tool_call_and_subscription_usage(
     monkeypatch.setenv("ANTHROPIC_API_KEY", "must-not-reach-cli")
     monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "must-not-reach-cli")
     monkeypatch.setenv("CLAUDE_CODE_USE_BEDROCK", "1")
+    monkeypatch.setenv("CLAUDE_CODE_EFFORT_LEVEL", "high")
     runner = FakeRunner(
         {
             "type": "result",
@@ -79,6 +80,7 @@ def test_claude_code_adapter_normalizes_tool_call_and_subscription_usage(
         _env_file=None,
         llm_provider="claude_code",
         claude_code_model="sonnet",
+        claude_code_effort_level="low",
     )
     client = ClaudeCodeClient(settings, runner=runner)
 
@@ -90,6 +92,8 @@ def test_claude_code_adapter_normalizes_tool_call_and_subscription_usage(
     command, env, timeout = runner.calls[0]
     assert command[0] == "claude"
     assert command[1] == "-p"
+    assert command[command.index("--model") + 1] == "sonnet"
+    assert command[command.index("--effort") + 1] == "low"
     assert "--safe-mode" in command
     assert "--no-session-persistence" in command
     assert command[command.index("--tools") + 1] == ""
@@ -99,6 +103,7 @@ def test_claude_code_adapter_normalizes_tool_call_and_subscription_usage(
     assert "ANTHROPIC_API_KEY" not in env
     assert "ANTHROPIC_AUTH_TOKEN" not in env
     assert "CLAUDE_CODE_USE_BEDROCK" not in env
+    assert "CLAUDE_CODE_EFFORT_LEVEL" not in env
     assert timeout == 180
     assert completion.text == ""
     assert completion.tool_calls[0].id == "claude-code-session-1"
@@ -151,6 +156,7 @@ def test_factory_builds_claude_code_without_an_api_key(
     assert isinstance(client, ClaudeCodeClient)
     assert client.provider == "claude_code"
     assert client.model == "sonnet"
+    assert client.effort_level == "low"
 
 
 def test_factory_explains_when_claude_cli_is_missing(

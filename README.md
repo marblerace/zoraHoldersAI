@@ -80,8 +80,20 @@ Confirm that the host CLI is authenticated:
 claude auth status
 ```
 
-Set `LLM_PROVIDER=claude_code` in `.env`, then run the application on the host so it can invoke your
-logged-in `claude` binary:
+Set these values in `.env`, then run the application on the host so it can invoke your logged-in
+`claude` binary:
+
+```dotenv
+LLM_PROVIDER=claude_code
+CLAUDE_CODE_MODEL=sonnet
+CLAUDE_CODE_EFFORT_LEVEL=low
+```
+
+The model alias currently selects the latest Sonnet, while the explicit low-effort setting keeps
+routine Text-to-SQL requests from inheriting a higher global Claude Code effort. To favor maximum
+speed over SQL reliability, set `CLAUDE_CODE_MODEL=haiku`; Haiku does not use an effort level.
+
+Run the API:
 
 ```bash
 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
@@ -345,6 +357,8 @@ Cases: 44 total / 37 executable.
 This is a bounded regression benchmark over one indexed token snapshot, not a claim of universal
 Text-to-SQL accuracy. The set deliberately includes multi-relation joins, unavailable-data
 rejections, and ambiguous questions rather than only straightforward aggregate queries.
+The published run used the `sonnet` alias at high effort; the application now defaults to low effort
+for subsequent interactive queries. Changing inference settings does not alter historical results.
 
 Evaluation-engineering highlights:
 

@@ -45,6 +45,7 @@ class ClaudeCodeClient:
         runner: CommandRunner | None = None,
     ) -> None:
         self.model = settings.claude_code_model
+        self.effort_level = settings.claude_code_effort_level
         self._command = settings.claude_code_command
         self._timeout_seconds = settings.claude_code_timeout_seconds
         self._max_output_tokens = settings.llm_max_output_tokens
@@ -68,6 +69,8 @@ class ClaudeCodeClient:
             json.dumps(output_schema, separators=(",", ":")),
             "--model",
             self.model,
+            "--effort",
+            self.effort_level,
             "--system-prompt",
             system_prompt,
             "--tools",
@@ -281,6 +284,9 @@ class ClaudeCodeClient:
         env = os.environ.copy()
         for name in _NON_SUBSCRIPTION_AUTH_ENV:
             env.pop(name, None)
+        # The explicit --effort argument is project-scoped and must not be
+        # overridden by an ambient Claude Code setting from another project.
+        env.pop("CLAUDE_CODE_EFFORT_LEVEL", None)
         env.setdefault("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1")
         return env
 

@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     openai_reasoning_effort: Literal["none", "low", "medium", "high"] = "low"
     claude_code_command: str = "claude"
     claude_code_model: str = "sonnet"
+    claude_code_effort_level: Literal["low", "medium", "high", "xhigh", "max"] = "low"
     claude_code_timeout_seconds: float = Field(default=180.0, gt=0, le=900)
     llm_max_output_tokens: int = Field(default=2048, ge=128, le=32_768)
     llm_timeout_seconds: float = Field(default=60.0, gt=0, le=300)
