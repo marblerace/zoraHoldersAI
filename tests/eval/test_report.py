@@ -40,6 +40,26 @@ def test_metrics_exclude_clarifications_from_sql_denominators() -> None:
     assert "Execution accuracy" in render_markdown(metrics, results)
 
 
+def test_clarification_only_metrics_have_no_sql_accuracy() -> None:
+    metrics = compute_metrics(
+        [
+            {
+                "check_type": "clarification",
+                "execution_correct": True,
+                "valid_sql": None,
+                "grounded": 1,
+                "answer_contains": None,
+                "latency_ms": 10,
+                "cost_usd": None,
+            }
+        ]
+    )
+
+    assert metrics["executable_cases"] == 0
+    assert metrics["execution_accuracy"] is None
+    assert metrics["clarification_accuracy"] == 1.0
+
+
 def test_readme_embedding_only_replaces_marked_section(tmp_path: Path) -> None:
     readme = tmp_path / "README.md"
     readme.write_text(

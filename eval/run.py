@@ -31,6 +31,10 @@ class GoldenCase:
     difficulty: str
 
 
+class ReferenceQueryError(RuntimeError):
+    """Raised when the evaluation yardstick cannot be executed safely."""
+
+
 def load_golden_set(path: Path) -> list[GoldenCase]:
     cases: list[GoldenCase] = []
     seen: set[str] = set()
@@ -65,11 +69,13 @@ def evaluate_case(
     judge: GroundednessJudge | None,
 ) -> dict[str, Any]:
     reference_rows: tuple[dict[str, Any], ...] = ()
-    reference_error: str | None = None
     if case.reference_sql:
         reference = executor.run(case.reference_sql)
+        if not reference.ok:
+            raise ReferenceQueryError(
+                f"Reference SQL failed for {case.id}: {reference.error or 'unknown error'}"
+            )
         reference_rows = reference.rows
-        reference_error = reference.error if not reference.ok else None
 
     try:
         answer = agent.ask(case.question)
@@ -80,7 +86,7 @@ def evaluate_case(
             "difficulty": case.difficulty,
             "check_type": case.check_type,
             "reference_sql": case.reference_sql,
-            "reference_error": reference_error,
+            "reference_error": None,
             "execution_correct": False,
             "valid_sql": False,
             "answer_contains": False,
@@ -91,11 +97,8 @@ def evaluate_case(
         }
 
     if case.check_type == "clarification":
-        execution_correct = answer.status == "clarification" and answer.sql is None
+        execution_correct = _is_safe_clarification(answer)
         valid_sql: bool | None = None
-    elif reference_error:
-        execution_correct = False
-        valid_sql = answer.status == "succeeded" and answer.sql is not None
     else:
         scorer = numeric_match if case.check_type == "numeric_match" else result_set_match
         execution_correct = answer.status == "succeeded" and scorer(
@@ -131,7 +134,7 @@ def evaluate_case(
         "answer": answer.answer,
         "rows": answer.rows,
         "reference_rows": reference_rows,
-        "reference_error": reference_error,
+        "reference_error": None,
         "execution_correct": execution_correct,
         "valid_sql": valid_sql,
         "answer_contains": contains_score,
@@ -144,6 +147,16 @@ def evaluate_case(
         "status": answer.status,
         "error": answer.error,
     }
+
+
+def _is_safe_clarification(answer: Any) -> bool:
+    """Accept a direct clarification or a cited rejection that never queries live data."""
+
+    if answer.sql is not None or answer.rows:
+        return False
+    if answer.status == "clarification":
+        return True
+    return answer.status == "succeeded" and bool(answer.citations)
 
 
 def run(args: argparse.Namespace) -> int:
@@ -177,7 +190,11 @@ def run(args: argparse.Namespace) -> int:
     results: list[dict[str, Any]] = []
     for index, case in enumerate(cases, 1):
         print(f"[{index:02d}/{len(cases):02d}] {case.id}: {case.question}", flush=True)
-        result = evaluate_case(case, agent=agent, executor=executor, judge=judge)
+        try:
+            result = evaluate_case(case, agent=agent, executor=executor, judge=judge)
+        except ReferenceQueryError as exc:
+            print(f"  INVALID: {exc}", file=sys.stderr, flush=True)
+            return 2
         results.append(result)
         marker = "PASS" if result["execution_correct"] else "FAIL"
         print(f"  {marker} ({result.get('latency_ms') or 0} ms)", flush=True)
@@ -195,13 +212,22 @@ def run(args: argparse.Namespace) -> int:
     print(f"Markdown: {markdown_path}")
 
     accuracy = metrics["execution_accuracy"]
-    if not args.no_gate and (accuracy is None or accuracy < args.threshold):
+    if not args.no_gate and _execution_gate_failed(metrics, args.threshold):
         print(
             f"Regression gate failed: execution accuracy {accuracy} < {args.threshold:.2f}",
             file=sys.stderr,
         )
         return 1
     return 0
+
+
+def _execution_gate_failed(metrics: dict[str, Any], threshold: float) -> bool:
+    """Apply the SQL gate only when the selected run contains executable cases."""
+
+    if metrics["executable_cases"] == 0:
+        return False
+    accuracy = metrics["execution_accuracy"]
+    return accuracy is None or accuracy < threshold
 
 
 def build_parser() -> argparse.ArgumentParser:

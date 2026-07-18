@@ -35,3 +35,8 @@ def test_prompt_disambiguates_balance_and_acquisition_semantics() -> None:
     assert "current balance_decimal of N" in prompt
     assert 'undefined holder "acquisition" time is ambiguous' in prompt
     assert "Never substitute first_seen_at with a caveat" in prompt
+    assert "transfers.amount is the explorer-reported stored integer amount" in prompt
+    assert "never\n  divide it by tokens.decimals" in prompt
+    assert '"Joined", "new holder", and "became a holder" are also ambiguous' in prompt
+    assert "Make every limited ranking deterministic" in prompt
+    assert "ORDER BY balance DESC, holder_address LIMIT 5" in prompt
