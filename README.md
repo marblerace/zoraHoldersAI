@@ -186,6 +186,8 @@ A local smoke run on 2026-07-18 sent a real MCP `describe_schema` call through t
 Langfuse stored one `mcp.call` trace with a nested `db.execute` span. The local project uses a
 non-personal demo identity; no developer account information is attached to the trace.
 
+![Langfuse trace showing an MCP call with nested database execution](docs/assets/langfuse_mcp_trace.jpg)
+
 Langfuse's current Python SDK is OpenTelemetry-native, so the instrumentation is not coupled to a
 custom agent framework and can coexist with another OTel backend.
 
