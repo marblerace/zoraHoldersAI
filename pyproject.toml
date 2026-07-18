@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "onchain-text2sql-agent"
+version = "0.2.0"
+description = "A guarded text-to-SQL analytics agent over live Zora holder and transfer data"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "anthropic>=0.57,<1",
+  "apscheduler>=3.10,<4",
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "openai>=1.93,<3",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic-settings>=2.6,<3",
+  "sqlglot>=26,<30",
+  "streamlit>=1.41,<2",
+  "uvicorn[standard]>=0.32,<1",
+]
+
+[project.optional-dependencies]
+observability = [
+  "langfuse>=4,<5",
+  "opentelemetry-sdk>=1.30,<2",
+]
+mcp = [
+  "mcp[cli]>=1.27,<2",
+]
+retrieval = [
+  "fastembed>=0.7,<1",
+  "pgvector>=0.4,<1",
+]
+all = [
+  "fastembed>=0.7,<1",
+  "langfuse>=4,<5",
+  "mcp[cli]>=1.27,<2",
+  "opentelemetry-sdk>=1.30,<2",
+  "pgvector>=0.4,<1",
+]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.8,<1",
+]
+
+[project.scripts]
+zora-indexer = "indexer.cli:main"
+zora-mcp = "mcp_server.__main__:main"
+zora-retrieval-index = "retrieval.index:main"
+zora-retrieval-eval = "eval.run_retrieval:main"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+  "agent",
+  "app",
+  "db",
+  "eval",
+  "indexer",
+  "llm",
+  "mcp_server",
+  "observability",
+  "retrieval",
+  "sql_guard",
+  "ui",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+  "legacy/all_time_holders.py",
+  "legacy/checker_zora.py",
+  "legacy/fetch_and_save_holders.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

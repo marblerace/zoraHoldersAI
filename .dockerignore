@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.cache
+.DS_Store
+data.csv
+progression_data.csv
+progression_curve_*.png
