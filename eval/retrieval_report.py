@@ -39,10 +39,13 @@ def render_retrieval_markdown(
                 status=summary.get("status", "unknown"),
             )
         )
+    lines.append("")
+    if any(summary.get("groundedness") is None for summary in summaries):
+        lines.append(
+            "Groundedness is `n/a` only where the optional provider-backed judge did not run."
+        )
     lines.extend(
         [
-            "",
-            "Groundedness is `n/a` unless the optional provider-backed judge was run. "
             "An unavailable reranker is reported explicitly and is never relabeled "
             "as a reranked run.",
             "",

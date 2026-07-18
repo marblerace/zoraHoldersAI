@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     langfuse_public_key: str | None = None
     langfuse_secret_key: SecretStr | None = None
     langfuse_host: str | None = None
+    otel_service_name: str = "zora-analytics-agent"
 
     retrieval_enabled: bool = True
     embeddings_provider: Literal["fastembed", "openai"] = "fastembed"
@@ -105,6 +106,14 @@ class Settings(BaseSettings):
     @classmethod
     def strip_base_url(cls, value: str) -> str:
         return value.rstrip("/")
+
+    @field_validator("otel_service_name")
+    @classmethod
+    def require_otel_service_name(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("OTEL_SERVICE_NAME cannot be empty")
+        return stripped
 
     @field_validator("admin_sync_token")
     @classmethod

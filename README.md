@@ -9,7 +9,7 @@ hybrid document retrieval, then returns the answer together with SQL rows and/or
 The model provider is swappable: Anthropic and OpenAI API adapters are available, while
 `claude_code` uses an authenticated Claude Code Pro/Max subscription without API-token billing.
 
-> **Tests:** 100 tests currently pass, including the SQL attack suite, circuit/cache behavior,
+> **Tests:** 103 tests currently pass, including the SQL attack suite, circuit/cache behavior,
 > MCP protocol handshake, retrieval provenance, and eval scorers.
 
 ## What this demonstrates
@@ -180,7 +180,8 @@ Open [localhost:3000](http://localhost:3000), create the first project/key pair,
 `.env`, and set `LANGFUSE_HOST=http://localhost:3000` for a host-run API. For the Compose API, set
 `LANGFUSE_DOCKER_HOST=http://langfuse-web:3000`. The optional `LANGFUSE_INIT_*` variables perform
 the same organization/project/user setup headlessly on first startup. Change all `LANGFUSE_*`
-local secrets before exposing that profile.
+local secrets before exposing that profile. `OTEL_SERVICE_NAME` defaults to `zora-analytics-agent`
+so new traces have a stable service identity instead of an anonymous OpenTelemetry resource.
 
 A local smoke run on 2026-07-18 sent a real MCP `describe_schema` call through this instrumentation:
 Langfuse stored one `mcp.call` trace with a nested `db.execute` span. The local project uses a

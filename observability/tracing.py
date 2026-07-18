@@ -141,19 +141,29 @@ def _get_configured_client() -> Any | None:
     host = (settings.langfuse_host or "").rstrip("/")
     if not public_key or not secret_key or not host:
         return None
-    return _build_client(public_key, secret_key, host)
+    return _build_client(public_key, secret_key, host, settings.otel_service_name)
 
 
 @lru_cache(maxsize=4)
-def _build_client(public_key: str, secret_key: str, host: str) -> Any | None:
+def _build_client(
+    public_key: str,
+    secret_key: str,
+    host: str,
+    service_name: str,
+) -> Any | None:
     try:
         from langfuse import Langfuse
+        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+        from opentelemetry.sdk.trace import TracerProvider
+
+        tracer_provider = TracerProvider(resource=Resource.create({SERVICE_NAME: service_name}))
 
         try:
             return Langfuse(
                 public_key=public_key,
                 secret_key=secret_key,
                 base_url=host,
+                tracer_provider=tracer_provider,
             )
         except TypeError:
             # Compatibility with Langfuse v3, which called this argument ``host``.
