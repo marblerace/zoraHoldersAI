@@ -1,5 +1,7 @@
 # On-Chain SQL + RAG Analytics Agent
 
+[![CI](https://github.com/marblerace/zoraHoldersAI/actions/workflows/ci.yml/badge.svg)](https://github.com/marblerace/zoraHoldersAI/actions/workflows/ci.yml)
+
 Ask questions in plain English about live Zora token data or the project's analytics
 methodology. The agent routes quantitative questions to guarded SQL and conceptual questions to
 hybrid document retrieval, then returns the answer together with SQL rows and/or cited chunks.
@@ -15,10 +17,10 @@ The model provider is swappable: Anthropic and OpenAI API adapters are available
 | Capability | Implementation |
 |---|---|
 | Bounded agentic tool use | `run_sql` + `search_docs`, with at most two tool executions in `agent/service.py` |
-| Production SQL safety | Fail-closed SQLGlot AST policy, allowlisted tables, row/timeout caps, and a SELECT-only role |
+| Defense-in-depth SQL safety | Fail-closed SQLGlot AST policy, allowlisted tables, row/timeout caps, and a SELECT-only role |
 | Hybrid RAG / vector database | pgvector cosine search + PostgreSQL FTS + Reciprocal Rank Fusion in `retrieval/` |
 | MCP integration | Official MCP Python SDK, FastMCP, stdio + Streamable HTTP in `mcp_server/` |
-| Production observability | OpenTelemetry-native Langfuse spans, structured stdout, and `query_logs` |
+| OpenTelemetry observability | OpenTelemetry-native Langfuse spans, structured stdout, and `query_logs` |
 | Resilience and cost control | Transient retries, provider circuit breaker, normalized answer cache, stale fallback |
 | Measured quality | A 44-case adversarial SQL harness plus a real 28-case retrieval ablation in `eval/` |
 | Provider independence | Anthropic, OpenAI, or local Claude Code subscription through the same `LLMClient` protocol |
@@ -175,10 +177,14 @@ docker compose --profile observability up -d
 ```
 
 Open [localhost:3000](http://localhost:3000), create the first project/key pair, place the keys in
-`.env`, and set `LANGFUSE_HOST=http://localhost:3000` for a host-run API. A containerized API should
-use `http://langfuse-web:3000`. Change all `LANGFUSE_*` local secrets before exposing that profile.
+`.env`, and set `LANGFUSE_HOST=http://localhost:3000` for a host-run API. For the Compose API, set
+`LANGFUSE_DOCKER_HOST=http://langfuse-web:3000`. The optional `LANGFUSE_INIT_*` variables perform
+the same organization/project/user setup headlessly on first startup. Change all `LANGFUSE_*`
+local secrets before exposing that profile.
 
-> **Langfuse screenshot placeholder:** add a captured `/ask` trace here before publishing the repo.
+A local smoke run on 2026-07-18 sent a real MCP `describe_schema` call through this instrumentation:
+Langfuse stored one `mcp.call` trace with a nested `db.execute` span. The local project uses a
+non-personal demo identity; no developer account information is attached to the trace.
 
 Langfuse's current Python SDK is OpenTelemetry-native, so the instrumentation is not coupled to a
 custom agent framework and can coexist with another OTel backend.
@@ -294,6 +300,7 @@ reference query. It is order- and alias-insensitive and tolerance-aware for nume
 ## Repository structure
 
 ```text
+.github/         CI for lint, formatting, tests, and both Compose configurations
 agent/           bounded tool loop, cache, circuit breaker, prompts
 app/             FastAPI: /ask, /admin/sync, /health
 db/              Postgres/pgvector schema, roles, schema introspection
@@ -319,3 +326,7 @@ docker compose config --quiet
 
 The optional dependency groups are `observability`, `mcp`, and `retrieval`; `all` is used by the
 runtime Docker image. No LangChain or LlamaIndex dependency is used.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
