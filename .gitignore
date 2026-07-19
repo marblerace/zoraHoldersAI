@@ -21,3 +21,8 @@ htmlcov/
 
 # Eval run artifacts (raw JSON; the headline table is embedded into README)
 eval/results/*.json
+
+# Internal build/spec notes — never publish
+FIX_BRIEF_*.md
+RUNBOOK_*.md
+*_SPEC_*.md
